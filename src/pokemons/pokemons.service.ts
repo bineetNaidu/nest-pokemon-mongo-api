@@ -13,8 +13,28 @@ export class PokemonsService {
   ) {}
 
   async create(data: CreatePokemonDto): Promise<PokemonDoc> {
-    const createdPokemon = new this.pokemonModel(data);
-    return await createdPokemon.save();
+    try {
+      const createdPokemon = new this.pokemonModel(data);
+      return await createdPokemon.save();
+    } catch (error) {
+      const fmtErrors = {
+        errors: !error.message.match(/E11000 duplicate key/gi)
+          ? Object.keys(error.errors).map((key) => {
+              return {
+                field: key,
+                message: `${key} is required!`,
+              };
+            })
+          : [
+              {
+                field: 'name',
+                message: 'Pokemon with this name already exists!',
+              },
+            ],
+      };
+
+      throw new HttpException(fmtErrors, HttpStatus.BAD_REQUEST);
+    }
   }
 
   async findAll(): Promise<PokemonDoc[]> {
