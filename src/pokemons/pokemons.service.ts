@@ -1,26 +1,53 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { POKEMON_MODEL_NAME } from 'src/shared/constants';
 import { CreatePokemonDto } from './dto/create-pokemon.dto';
 import { UpdatePokemonDto } from './dto/update-pokemon.dto';
+import { PokemonDoc } from './model/pokemom.model';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 
 @Injectable()
 export class PokemonsService {
-  create(createPokemonDto: CreatePokemonDto) {
-    return 'This action adds a new pokemon';
+  constructor(
+    @InjectModel(POKEMON_MODEL_NAME) private pokemonModel: Model<PokemonDoc>,
+  ) {}
+
+  async create(data: CreatePokemonDto): Promise<PokemonDoc> {
+    const createdPokemon = new this.pokemonModel(data);
+    return await createdPokemon.save();
   }
 
-  findAll() {
-    return `This action returns all pokemons`;
+  async findAll(): Promise<PokemonDoc[]> {
+    return await this.pokemonModel.find().exec();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} pokemon`;
+  async findOne(id: string): Promise<PokemonDoc> {
+    const pokemon = await this.pokemonModel.findById(id);
+    if (!pokemon) {
+      throw new HttpException('Pokemon not found', HttpStatus.NOT_FOUND);
+    }
+    return pokemon;
   }
 
-  update(id: number, updatePokemonDto: UpdatePokemonDto) {
-    return `This action updates a #${id} pokemon`;
+  async update(id: string, updatedData: UpdatePokemonDto) {
+    const pokemon = await this.pokemonModel.findById(id);
+    if (!pokemon) {
+      throw new HttpException('Pokemon not found', HttpStatus.NOT_FOUND);
+    }
+    pokemon.set(updatedData);
+    return await pokemon.save();
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} pokemon`;
+  async remove(id: string): Promise<boolean> {
+    try {
+      const pokemon = await this.pokemonModel.findById(id);
+      if (!pokemon) {
+        throw new HttpException('Pokemon not found', HttpStatus.NOT_FOUND);
+      }
+      await pokemon.remove();
+      return true;
+    } catch (er) {
+      return false;
+    }
   }
 }
