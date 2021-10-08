@@ -10,5 +10,5 @@ export class CreatePokemonDto {
   readonly abilities: string[];
   readonly types: string[];
   readonly weaknesses: string[];
-  readonly stats: StatsType[];
+  readonly stats: StatsType;
 }
