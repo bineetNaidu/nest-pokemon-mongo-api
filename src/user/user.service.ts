@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { USER_MODEL_NAME } from 'src/shared/constants';
@@ -13,9 +13,29 @@ export class UserService {
   ) {}
 
   async create(data: CreateUserDto): Promise<UserDoc> {
-    const user = new this.userRepo(data);
-    await user.save();
-    return user;
+    try {
+      const user = new this.userRepo(data);
+      await user.save();
+      return user;
+    } catch (error) {
+      const fmtErrors = {
+        errors: !error.message.match(/E11000 duplicate key/gi)
+          ? Object.keys(error.errors).map((key) => {
+              return {
+                field: key,
+                message: `${key} is required!`,
+              };
+            })
+          : [
+              {
+                field: 'username',
+                message: 'Either username OR email already exists!',
+              },
+            ],
+      };
+
+      throw new HttpException(fmtErrors, HttpStatus.BAD_REQUEST);
+    }
   }
 
   async findAll(): Promise<UserDoc[]> {
