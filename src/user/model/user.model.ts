@@ -21,7 +21,7 @@ const StringAndRequired = {
 const UserSchema = new mongoose.Schema(
   {
     username: { ...StringAndRequired, unique: true, lowercase: true },
-    email: { StringAndRequired, unique: true, isEmail: true },
+    email: { ...StringAndRequired, unique: true },
     password: StringAndRequired,
     role: {
       type: String,
