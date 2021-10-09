@@ -5,6 +5,7 @@ import { USER_MODEL_NAME } from 'src/shared/constants';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserDoc } from './model/user.model';
+import * as argon from 'argon2';
 
 @Injectable()
 export class UserService {
@@ -63,5 +64,20 @@ export class UserService {
     } catch (error) {
       return false;
     }
+  }
+
+  async login(data: { email: string; password: string }): Promise<UserDoc> {
+    const user = await this.userRepo.findOne({ email: data.email });
+    if (!user) {
+      throw new HttpException(
+        'User with that email dont exists',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+    const isValidPassword = await argon.verify(user.password, data.password);
+    if (isValidPassword) {
+      throw new HttpException('UNAUTHORIZED', HttpStatus.UNAUTHORIZED);
+    }
+    return user;
   }
 }
