@@ -6,7 +6,7 @@ const BaseStatRequirement = {
   required: true,
   default: 0,
   min: 0,
-  max: 15,
+  max: 100,
 };
 
 export type StatsType = {
