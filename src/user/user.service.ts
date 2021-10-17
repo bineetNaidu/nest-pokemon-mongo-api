@@ -6,11 +6,14 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserDoc } from './model/user.model';
 import * as argon from 'argon2';
+import { JwtService } from '@nestjs/jwt';
+import { AuthResponseDto } from 'src/auth/dto/auth-response.dto';
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectModel(USER_MODEL_NAME) private readonly userRepo: Model<UserDoc>,
+    private jwtService: JwtService,
   ) {}
 
   async create(data: CreateUserDto): Promise<UserDoc> {
@@ -66,7 +69,10 @@ export class UserService {
     }
   }
 
-  async login(data: { email: string; password: string }): Promise<UserDoc> {
+  async login(data: {
+    email: string;
+    password: string;
+  }): Promise<AuthResponseDto> {
     const user = await this.userRepo.findOne({ email: data.email });
     if (!user) {
       throw new HttpException(
@@ -75,9 +81,16 @@ export class UserService {
       );
     }
     const isValidPassword = await argon.verify(user.password, data.password);
-    if (isValidPassword) {
+    if (!isValidPassword) {
       throw new HttpException('UNAUTHORIZED', HttpStatus.UNAUTHORIZED);
     }
-    return user;
+
+    const accessToken = await this.jwtService.signAsync({
+      _id: user._id,
+      email: user.email,
+      role: user.role,
+    });
+
+    return { user, accessToken };
   }
 }
